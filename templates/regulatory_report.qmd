@@ -1,0 +1,57 @@
+---
+title: "PhysPK/DoseFlow - Regulatory PBPK Simulation Report"
+author: "Automated DoseFlow Engine"
+date: "`r Sys.Date()`"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+---
+
+# 1. Executive Summary
+
+This document serves as an automated regulatory report for Physiologically Based Pharmacokinetic (PBPK) simulation, compliant with general submission guidelines for EMA, FDA, INFARMED, and ANVISA. The simulation is deterministic, fully based on Ordinary Differential Equations (ODEs) with no black-box AI algorithms.
+
+# 2. Compound Specifications
+
+**Drug Name:** {{DRUG_NAME}}
+**Molecular Weight:** {{MW}} g/mol
+**Lipophilicity (logP):** {{LOGP}}
+**Ionization (pKa):** {{PKA}} (Type: {{TYPE}})
+**Fraction Unbound (Plasma):** {{FU}}
+**Intrinsic Hepatic Clearance:** {{CL_INT}} L/h
+
+# 3. Population Physiology (ICRP-89)
+
+**Reference Population:** {{POP_NAME}}
+**Body Weight:** {{WEIGHT}} kg
+**Cardiac Output:** {{CARDIAC_OUT}} L/h
+*Volumes and flows are derived from standard ICRP-89 data. Tissue partition coefficients (Kp) were deterministically calculated using the Henderson-Hasselbalch equation and lipophilicity.*
+
+# 4. Administration & Dosing
+
+**Dose:** {{DOSE}} mg
+**Route:** {{ROUTE}} (Oral / Intravenous)
+**Simulation Time:** {{TSPAN}} hours
+
+# 5. Pharmacokinetic Results
+
+*The raw time-series data is attached as a CSV file (`results.csv`).*
+
+- **Maximum Venous Concentration ($C_{max}$):** {{CMAX}} mg/L
+- **Time to Maximum Concentration ($T_{max}$):** {{TMAX}} h
+- **Area Under the Curve ($AUC_{0-t}$):** {{AUC}} mg*h/L
+
+# 6. Mathematical Equations Used
+
+1. **Absorption**: Noyes-Whitney Dissolution $dC/dt = K_{diss} (C_s - C_{GI})$
+2. **Ionization**: Henderson-Hasselbalch $10^{(pH - pKa)}$
+3. **Hepatic Clearance**: Well-stirred model $CL_H = \frac{Q_L \cdot f_u \cdot CL_{int}}{Q_L + f_u \cdot CL_{int}}$
+4. **Renal Clearance**: Glomerular Filtration $CL_R = f_u \cdot GFR$
+
+# 7. Audit & Reproducibility
+
+**DoseFlow Engine Version:** v0.1.0 (Open-Source)
+**Verification Hash:** {{HASH}}
+*This report is generated purely from the mathematical state vector without stochastic deviations.*

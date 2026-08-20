@@ -1,112 +1,75 @@
-# DoseFlow
+# DoseFlow (PhysPK Core) 🩸💊
 
-**Open-source, deterministic physiologically-based pharmacokinetics (PBPK) simulation.**
+**O teu simulador farmacocinético fisiológico (PBPK) determinístico e open-source.**
 
-DoseFlow models the human body as a network of physiologically realistic compartments and solves the ordinary differential equations (ODEs) that govern a drug's journey — absorption, distribution, metabolism and excretion (ADME). Every equation is explicit, auditable and reproducible. No AI. No black boxes.
+O **DoseFlow** (baseado no motor interno **PhysPK**) nasceu de uma convicção simples: *a fisiologia é pública, a matemática é pública, e o conhecimento que salva vidas não pode ficar trancado num simulador de 50.000 dólares.*
 
-> ⚠️ **Research & educational tool.** DoseFlow is **not** a medical device and does **not** provide medical advice. Outputs must be reviewed by a qualified professional and are not for clinical decision-making.
+Este simulador permite a cientistas, universidades, desenvolvedores de genéricos e farmacêuticas pequenas modelar, prever e auditar como um fármaco viaja pelo corpo humano — sem "caixas negras" ou algoritmos opacos de IA. É tudo EDOs puras, claras e auditáveis.
 
-## Why DoseFlow exists
+## 🚀 Funcionalidades (O que o núcleo faz)
 
-Commercial PBPK platforms cost tens of thousands of dollars per year, locking out small pharma, independent researchers and universities in low- and middle-income countries. DoseFlow puts a rigorous, transparent PBPK engine in everyone's hands — free, forever.
+- **Determinismo Absoluto**: Escrito em Julia (`DifferentialEquations.jl`), cada número tem uma equação e garante-se o mesmo resultado bit-a-bit para fins regulamentares.
+- **Biologia Real (ICRP-89)**: O modelo constrói os órgãos com base nos volumes e fluxos sanguíneos padrão para humanos (fígado, rim, cérebro, músculos, etc.).
+- **Escalonamento Pediátrico**: Aplica leis de alometria ($W^{0.75}$) para derivar fisiologias de crianças instantaneamente a partir de um adulto.
+- **Absorção Oral e Noyes-Whitney**: Simula não só a entrada intravenosa (IV), mas o perfil completo de dissolução e absorção gastrointestinal dependente da solubilidade.
+- **Ionização e Partição (Kp)**: Usa a equação de Henderson-Hasselbalch e $logP$ para prever automaticamente o rácio de concentração tecido-plasma.
+- **Metabolismo Hepático e Excreção Renal**: Modela a fração livre no sangue ($f_u$) sujeita a clearance hepático (well-stirred) e a filtração glomerular (GFR).
+- **Dashboard Interativo**: Interface web rápida para veres as curvas Cmax/Tmax ganharem vida (Dash.jl).
+- **Relatórios Regulamentares**: Gera _templates_ Quarto (.qmd) perfeitamente estruturados para relatórios padrão (EMA/FDA/INFARMED).
 
-## Principles
+## 🛠️ Instalação
 
-- **Deterministic** — same input → same output, always.
-- **Auditable** — every number traces to a published equation and reference.
-- **Accessible** — runs offline on a laptop; no license server, no cloud.
-- **Interoperable** — reads/writes SBML and PEtab.
-- **Free** — MIT-licensed core, free forever.
+Precisas de ter a linguagem [Julia](https://julialang.org/downloads/) instalada no teu sistema. O motor é ultra-leve e corre bem em portáteis de 8GB RAM.
 
-## Features
-
-- Whole-body multi-compartment PBPK (liver, kidney, lung, brain, muscle, fat, skin, gut, …)
-- Physiological priors from ICRP 89 (tissue volumes, blood flows)
-- Absorption: first-order kinetics + Noyes–Whitney dissolution
-- Distribution: tissue/plasma partitioning (Rodgers–Rowland), protein binding (Scatchard)
-- Metabolism: Michaelis–Menten (CYP450), hepatic clearance (well-stirred / parallel-tube)
-- Excretion: glomerular filtration (GFR)
-- Pharmacodynamics: E<sub>max</sub> / Hill equation
-- Special populations: pediatric allometric scaling, hepatic/renal impairment
-- Reproducible population simulation (seeded quasi-random sampling)
-- SBML / PEtab import & export
-
-## The auditable core
-
-| Process | Model |
-|---|---|
-| Compartment mass balance | dCᵢ/dt = Qᵢ/V·(C_art − C/K_p,i) − CLᵢ/V·Cᵢ |
-| GI absorption | dA_GI/dt = −k_a·A_GI |
-| Dissolution | dC/dt = (D·A/(h·V))·(C_s − C) |
-| Metabolism | v = V_max·C/(K_m + C) |
-| PD effect | E = E_max·Cⁿ/(EC₅₀ⁿ + Cⁿ) |
-| Protein binding | f_u = 1/(1 + K_a·P) |
-| Pediatric scaling | CL_child = CL_adult·(W_child/W_adult)^0.75 |
-
-## Quick start
-
-Requires **Julia ≥ 1.10**.
-
-```julia
-using Pkg; Pkg.add("DoseFlow")
+1. Clona o repositório:
+```bash
+git clone https://github.com/teu-usuario/doseflow.git
+cd doseflow
 ```
 
-```julia
-using DoseFlow, Plots
-
-# Default adult whole-body model + oral 400 mg dose
-model   = pbpk_model(population = :adult)
-regimen = dose(amount = 400.0, route = :oral, interval = 8.0)
-
-sol = simulate(model, regimen, tspan = (0.0, 24.0))
-plot_concentration(sol, tissue = :plasma)
+2. Instala as dependências:
+```bash
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
-*(API is the current development target; see `docs/` for the evolving reference.)*
+## 🧪 Como usar as Simulações (Terminal)
 
-## Project structure
+Temos um script básico configurado que lê o humano (ICRP-89) e testa uma dose oral vs intravenosa:
 
+```bash
+julia --project=. examples/basic_sim.jl
 ```
-src/            # core engine (compartments, ODEs, solvers)
-  physiology/   # ICRP priors, populations, scaling
-  adme/         # absorption, distribution, metabolism, excretion
-  pd/           # pharmacodynamics
-  io/           # SBML / PEtab import-export
-docs/           # documentation & tutorials
-test/           # unit & regression tests
+Isto irá correr as EDOs em milissegundos e produzir as saídas no terminal, além de gerar automaticamente um `results_oral.csv` com a tabela de tempos/concentrações na pasta `data/`.
+
+## 🌐 Dashboard Interativo
+
+Para teres uma interface visual onde podes ajustar as doses e ver as curvas a atualizar em tempo real:
+
+```bash
+julia --project=. dashboard/app.jl
 ```
+Abre o teu browser no endereço: `http://127.0.0.1:8050`
 
-## Roadmap
+## 📊 Relatórios Regulamentares (PDF)
 
-- [ ] Core whole-body PBPK + oral/IV routes
-- [ ] Special populations (pediatric, hepatic, renal)
-- [ ] SBML/PEtab interoperability
-- [ ] Reproducible population simulation
-- [ ] Web dashboard (Makie/Dash)
-- [ ] Regulatory-style report generation (Quarto)
+A função `generate_pdf_report(pop, compound, sol, dose, route, out_dir)` do nosso módulo `reports.jl` pega no modelo e produz um `report_XXX.qmd` preenchido.
+Se tiveres o [Quarto](https://quarto.org/) instalado, basta compilares:
 
-## Contributing
-
-Issues and pull requests are welcome. Please read `CONTRIBUTING.md` and keep every model change accompanied by a test and a literature reference — auditability is the project's core promise.
-
-## License
-
-MIT © DoseFlow contributors. See [`LICENSE`](LICENSE).
-
-## Citation
-
-If you use DoseFlow in research, please cite:
-
-```bibtex
-@software{doseflow,
-  title  = {DoseFlow: an open-source, deterministic PBPK simulator},
-  author = {Lunfuankenda, Filipe},
-  year   = {2026},
-  url    = {https://github.com/<your-username>/doseflow},
-  license = {MIT}
-}
+```bash
+quarto render data/report_CustomDrug_Oral.qmd
 ```
+*(Garante PDF perfeitamente formatado para dossiers de submissão)*
+
+## 🔬 A Matemática Base
+
+Não há segredos no **DoseFlow**. Eis o que acontece no motor:
+
+*   **Absorção Oral**: $dM/dt = k_{diss} \times \max(C_s - C_{GI}, 0)$ e $dA_{absorvido} = k_a \times A_{Líquido}$
+*   **Ionização (Henderson-Hasselbalch)**: Para um ácido: $f_{un} = \frac{1}{1 + 10^{(pH - pKa)}}$
+*   **Clearance Hepático**: $CL_H = \frac{Q_L \cdot f_u \cdot CL_{int}}{Q_L + f_u \cdot CL_{int}}$
+*   **Clearance Renal (GFR)**: $CL_R = f_u \cdot GFR$
+*   **Efeito (Farmacodinâmica)**: Equação de Hill $E = \frac{E_{max} \cdot C^n}{EC50^n + C^n}$
 
 ---
 
-*DoseFlow is part of a broader effort to make quantitative pharmacology open and equitable.*
+*Criado para democratizar a ciência dos fármacos. Livre, aberto, exato.*

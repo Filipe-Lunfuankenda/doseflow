@@ -1,0 +1,30 @@
+# Julia
+*.jl.cov
+*.jl.cs
+*.jl.mem
+*.jl.prof
+*.jl.trace
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environments
+Manifest.toml
+
+# Build and docs
+.build/
+docs/build/
+
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Data and outputs
+data/
+*.pdf
+*.html
+
+# IDEs
+.vscode/
+.idea/

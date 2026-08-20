@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320">
+  <defs>
+    <linearGradient id="dG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0FA3B1"/><stop offset="1" stop-color="#0B7285"/>
+    </linearGradient>
+    <linearGradient id="fG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0FA3B1"/><stop offset="1" stop-color="#34C78A"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(16,16) scale(0.56)">
+    <path d="M120 74 C120 74 58 176 58 240 C58 284 86 316 120 316
+             C154 316 182 284 182 240 C182 176 120 74 120 74 Z" fill="url(#dG)"/>
+    <path d="M182 250 C240 168 276 332 312 250 C348 168 376 332 412 250
+             C436 196 458 300 478 250" fill="none" stroke="url(#fG)"
+          stroke-width="26" stroke-linecap="round"/>
+    <circle cx="312" cy="250" r="20" fill="#FFB020"/>
+    <circle cx="412" cy="250" r="20" fill="#FFB020"/>
+    <circle cx="478" cy="250" r="15" fill="#FFB020"/>
+  </g>
+  <text x="330" y="205" font-family="Manrope, Inter, 'Segoe UI', sans-serif"
+        font-size="120" font-weight="800" fill="#0E2A3A">Dose<tspan fill="#0FA3B1">Flow</tspan></text>
+</svg>
