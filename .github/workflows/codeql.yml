@@ -24,9 +24,9 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
-        languages: 'python' # Note: CodeQL doesn't natively support Julia yet, but can scan the Python parts (Dash/Plotly wrappers if any) or JS. We leave it generic.
+        languages: 'actions' # Note: CodeQL doesn't natively support Julia, so we scan GitHub Actions workflows for vulnerabilities instead.
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
-        category: "/language:python"
+        category: "/language:actions"
