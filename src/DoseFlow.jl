@@ -8,8 +8,8 @@ using JSON
 # Includes
 include("compounds.jl")
 include("compartments.jl")
-include("models.jl")
 include("population.jl")
+include("models.jl")
 include("reports.jl")
 
 # Exports
