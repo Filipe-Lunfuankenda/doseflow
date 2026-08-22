@@ -9,87 +9,114 @@ Executa uma simulação PBPK padrão.
 Routes supported: `:IV` (Intravenous Bolus), `:Oral` (Oral Administration with dissolution).
 """
 function run_simulation(pop::Population, compound::Compound, dose::Float64, tspan::Tuple{Float64, Float64}; route=:IV)
-    # Extrair compartimentos / Extract compartments
-    liver = pop.compartments["liver"]
-    kidney = pop.compartments["kidney"]
-    muscle = pop.compartments["muscle"]
     
+    # Flow Definitions
+    Q_total = pop.cardiac_output
+    Q_liver_art = pop.compartments["liver"].flow
+    Q_gut = pop.compartments["gut"].flow
+    Q_kidney = pop.compartments["kidney"].flow
+    Q_brain = pop.compartments["brain"].flow
+    Q_muscle = pop.compartments["muscle"].flow
+    Q_adipose = pop.compartments["adipose"].flow
+    Q_heart = pop.compartments["heart"].flow
+    Q_skin = pop.compartments["skin"].flow
+    
+    # Volumes
     V_venous = pop.blood_volume * 0.7
     V_arterial = pop.blood_volume * 0.3
     V_GI_fluid = 0.25 # L (Standard GI fluid volume for dissolution)
     
-    # [Q_liver, Q_kidney, Q_muscle, V_liver, V_kidney, V_muscle, V_ven, V_art, CL_int, fu, k_a, solubility, V_GI_fluid]
-    p = [
-        liver.flow, kidney.flow, muscle.flow,
-        liver.volume, kidney.volume, muscle.volume,
-        V_venous, V_arterial,
-        compound.CL_int, compound.fu,
-        compound.k_a, compound.solubility, V_GI_fluid
-    ]
-    
-    function pbpk_odes!(du, u, p, t)
-        Q_L, Q_K, Q_M, V_L, V_K, V_M, V_ven, V_art, CL_int, fu, k_a, Cs, V_GI = p
-        
-        # Estados / States
-        A_ven = u[1]; A_art = u[2]; A_L = u[3]; A_K = u[4]; A_M = u[5]
-        A_GI_solid = u[6]; A_GI_liquid = u[7]
-        
-        # Concentrações / Concentrations
-        C_ven = A_ven / V_ven
-        C_art = A_art / V_art
-        C_L = A_L / V_L
-        C_K = A_K / V_K
-        C_M = A_M / V_M
-        C_GI = A_GI_liquid / V_GI
-        
-        # 1. Absorção Oral (Noyes-Whitney Dissolution + First-order absorption)
-        # dC/dt = D*A/(h*V) * (Cs - C). Representamos a constante D*A/h como k_diss
-        k_diss = 0.5 # 1/h (Simplificação para MVP)
-        
-        # Dissolução para apenas se C_GI atingir a solubilidade (Cs) ou se não houver sólido
-        dissolution_rate = A_GI_solid > 0 ? k_diss * max(Cs - C_GI, 0.0) * V_GI : 0.0
-        # Garantir que a taxa não retira mais do que o existente
-        if dissolution_rate > A_GI_solid * 100 # Prevenir instabilidade numérica
-            dissolution_rate = A_GI_solid * 100 
-        end
-        
-        absorption_rate = k_a * A_GI_liquid # Passa do GI liquid para o Fígado (Portal Vein)
-        
-        du[6] = -dissolution_rate
-        du[7] = dissolution_rate - absorption_rate
-        
-        # 2. Balanço Sistémico / Systemic Balance
-        # O GI drena para a veia porta do fígado / GI drains to Liver portal vein
-        du[1] = Q_L * C_L + Q_K * C_K + Q_M * C_M - (Q_L + Q_K + Q_M) * C_ven
-        
-        du[2] = (Q_L + Q_K + Q_M) * C_ven - (Q_L + Q_K + Q_M) * C_art
-        
-        # Fígado (recebe sangue arterial + sangue venoso do GI)
-        # O metabolismo (CL_int) atua geralmente sobre a porção livre e não-ionizada (ou apenas livre) no tecido hepático.
-        # Aqui simplificamos assumindo que CL_int foi medido com base no fármaco livre no sangue.
-        f_unionized = fraction_unionized(compound, liver.pH) # Se precisarmos usar
-        
-        # Well-stirred model para clearance hepática / Well-stirred hepatic clearance
-        CL_H = (Q_L * fu * CL_int) / (Q_L + fu * CL_int)
-        
-        du[3] = Q_L * (C_art - C_L) + absorption_rate - CL_H * C_L
-        
-        # Rim (Adicionada filtração glomerular) / Kidney (Glomerular Filtration)
-        # GFR standard adulto ~ 120 mL/min = 7.2 L/h
-        GFR = 7.2
-        CL_renal = fu * GFR # Filtração da fração livre
-        du[4] = Q_K * (C_art - C_K) - CL_renal * C_K
-        
-        # Músculo
-        du[5] = Q_M * (C_art - C_M)
+    # Ensure mass balance of flows
+    sum_Q = Q_liver_art + Q_gut + Q_kidney + Q_brain + Q_muscle + Q_adipose + Q_heart + Q_skin
+    Q_other = Q_total - sum_Q
+    if Q_other < 0
+        error("Sum of compartment flows exceeds total cardiac output!")
     end
     
-    # Condições Iniciais / Initial Conditions
-    u0 = zeros(7)
+    p = (pop, compound, V_venous, V_arterial, V_GI_fluid, Q_total, sum_Q, Q_other,
+         Q_liver_art, Q_gut, Q_kidney, Q_brain, Q_muscle, Q_adipose, Q_heart, Q_skin)
+    
+    function pbpk_odes!(du, u, p, t)
+        (pop, compound, V_ven, V_art, V_GI, Q_total, sum_Q, Q_other,
+         Q_liver_art, Q_gut, Q_kidney, Q_brain, Q_muscle, Q_adipose, Q_heart, Q_skin) = p
+        
+        # States: 
+        # 1:Venous, 2:Arterial, 3:Liver, 4:Kidney, 5:Brain, 6:Muscle, 7:Adipose, 
+        # 8:Heart, 9:Lungs, 10:Skin, 11:Gut, 12:GI_Solid, 13:GI_Liquid
+        A_ven, A_art, A_liver, A_kidney, A_brain, A_muscle, A_adipose, A_heart, A_lungs, A_skin, A_gut, A_GI_solid, A_GI_liquid = u
+        
+        # Concentrations
+        C_ven = A_ven / V_ven
+        C_art = A_art / V_art
+        C_liver = A_liver / pop.compartments["liver"].volume
+        C_kidney = A_kidney / pop.compartments["kidney"].volume
+        C_brain = A_brain / pop.compartments["brain"].volume
+        C_muscle = A_muscle / pop.compartments["muscle"].volume
+        C_adipose = A_adipose / pop.compartments["adipose"].volume
+        C_heart = A_heart / pop.compartments["heart"].volume
+        C_lungs = A_lungs / pop.compartments["lungs"].volume
+        C_skin = A_skin / pop.compartments["skin"].volume
+        C_gut = A_gut / pop.compartments["gut"].volume
+        C_GI = A_GI_liquid / V_GI
+        
+        # 1. Oral Absorption (Noyes-Whitney Dissolution + First-order absorption)
+        k_diss = 0.5 # 1/h (Simplificação para MVP)
+        dissolution_rate = A_GI_solid > 0 ? k_diss * max(compound.solubility - C_GI, 0.0) * V_GI : 0.0
+        if dissolution_rate > A_GI_solid * 100 # Prevent numerical instability
+            dissolution_rate = A_GI_solid * 100 
+        end
+        absorption_rate = compound.k_a * A_GI_liquid
+        
+        du[12] = -dissolution_rate
+        du[13] = dissolution_rate - absorption_rate
+        
+        # 2. Hepatic & Renal Clearance
+        fu = compound.fu
+        CL_int = compound.CL_int
+        Q_liver_total = Q_liver_art + Q_gut
+        
+        # Well-stirred model for liver
+        CL_H = (Q_liver_total * fu * CL_int) / (Q_liver_total + fu * CL_int)
+        
+        # Renal Clearance (GFR ~ 7.2 L/h)
+        CL_R = fu * 7.2
+        
+        # 3. Mass Balance ODEs
+        
+        # Lungs (receives venous return, pumps to arterial)
+        du[9] = Q_total * C_ven - Q_total * C_lungs
+        
+        # Arterial Blood
+        du[2] = Q_total * C_lungs - Q_total * C_art
+        
+        # Gut
+        du[11] = Q_gut * (C_art - C_gut)
+        
+        # Liver (receives hepatic artery + gut venous return)
+        du[3] = Q_liver_art * C_art + Q_gut * C_gut + absorption_rate - Q_liver_total * C_liver - CL_H * C_liver
+        
+        # Other Organs
+        du[4] = Q_kidney * (C_art - C_kidney) - CL_R * C_kidney
+        du[5] = Q_brain * (C_art - C_brain)
+        du[6] = Q_muscle * (C_art - C_muscle)
+        du[7] = Q_adipose * (C_art - C_adipose)
+        du[8] = Q_heart * (C_art - C_heart)
+        du[10] = Q_skin * (C_art - C_skin)
+        
+        # Venous Blood (collects from all organs)
+        Venous_return = (Q_liver_total * C_liver) + (Q_kidney * C_kidney) + (Q_brain * C_brain) + 
+                        (Q_muscle * C_muscle) + (Q_adipose * C_adipose) + (Q_heart * C_heart) + 
+                        (Q_skin * C_skin) + (Q_other * C_art)
+                        
+        du[1] = Venous_return - Q_total * C_ven
+    end
+    
+    # Initial Conditions
+    u0 = zeros(13)
     if route == :IV
-        u0[1] = dose # Dose no sangue venoso
+        u0[1] = dose # Venous blood
     elseif route == :Oral
-        u0[6] = dose # Dose no estômago (sólido)
+        u0[12] = dose # GI solid
     else
         error("Route not supported. Use :IV or :Oral")
     end

@@ -1,25 +1,63 @@
 # src/reports.jl
+using DataFrames, CSV
 
 """
     export_to_csv(sol, filepath::String)
 
 Exports the PBPK simulation time-series results to a CSV file.
-Designed to be lightweight (no heavy DataFrames.jl dependency).
 """
 function export_to_csv(sol, filepath::String)
-    open(filepath, "w") do io
-        # Write CSV Header
-        write(io, "Time_h,Venous_Blood_mg,Arterial_Blood_mg,Liver_mg,Kidney_mg,Muscle_mg,GI_Solid_mg,GI_Liquid_mg\n")
-        
-        # Write Data rows
-        for i in 1:length(sol.t)
-            t = sol.t[i]
-            u = sol.u[i]
-            line = "$(t),$(u[1]),$(u[2]),$(u[3]),$(u[4]),$(u[5]),$(u[6]),$(u[7])\n"
-            write(io, line)
-        end
-    end
+    df = DataFrame(
+        Time_h = sol.t,
+        Venous_Blood_mg = [u[1] for u in sol.u],
+        Arterial_Blood_mg = [u[2] for u in sol.u],
+        Liver_mg = [u[3] for u in sol.u],
+        Kidney_mg = [u[4] for u in sol.u],
+        Brain_mg = [u[5] for u in sol.u],
+        Muscle_mg = [u[6] for u in sol.u],
+        Adipose_mg = [u[7] for u in sol.u],
+        Heart_mg = [u[8] for u in sol.u],
+        Lungs_mg = [u[9] for u in sol.u],
+        Skin_mg = [u[10] for u in sol.u],
+        Gut_mg = [u[11] for u in sol.u],
+        GI_Solid_mg = [u[12] for u in sol.u],
+        GI_Liquid_mg = [u[13] for u in sol.u]
+    )
+    CSV.write(filepath, df)
     println("Results successfully exported to: ", filepath)
+end
+
+"""
+    export_to_sbml(sol, pop, compound, filepath)
+
+Exports a simplified structural SBML representation of the model parameters.
+"""
+function export_to_sbml(sol, pop::Population, compound::Compound, filepath::String)
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version2/core" level="3" version="2">
+  <model id="DoseFlow_PBPK_$(compound.name)" name="DoseFlow PBPK Model">
+    <listOfCompartments>"""
+    
+    for (k, c) in pop.compartments
+        xml *= "\n      <compartment id=\"$(k)\" name=\"$(c.name)\" size=\"$(c.volume)\" constant=\"true\"/>"
+    end
+    xml *= "\n      <compartment id=\"VenousBlood\" size=\"$(pop.blood_volume * 0.7)\" constant=\"true\"/>"
+    xml *= "\n      <compartment id=\"ArterialBlood\" size=\"$(pop.blood_volume * 0.3)\" constant=\"true\"/>"
+    
+    xml *= """
+    
+    </listOfCompartments>
+    <listOfParameters>
+      <parameter id="CL_int" value="$(compound.CL_int)" constant="true"/>
+      <parameter id="fu" value="$(compound.fu)" constant="true"/>
+      <parameter id="k_a" value="$(compound.k_a)" constant="true"/>
+      <parameter id="solubility" value="$(compound.solubility)" constant="true"/>
+    </listOfParameters>
+  </model>
+</sbml>"""
+    
+    write(filepath, xml)
+    println("SBML structure successfully exported to: ", filepath)
 end
 
 """

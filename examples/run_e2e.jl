@@ -14,9 +14,15 @@ function main()
     println("Running simulation for 24 hours...")
     sol = run_simulation(pop, c, dose_mg, tspan)
     
-    out_file = "e2e_results.csv"
-    println("Exporting results to ", out_file, "...")
-    export_to_csv(sol, out_file)
+    out_csv = "e2e_results.csv"
+    out_sbml = "e2e_model.xml"
+    
+    println("Exporting results to ", out_csv, "...")
+    export_to_csv(sol, out_csv)
+    
+    println("Exporting structural SBML to ", out_sbml, "...")
+    export_to_sbml(sol, pop, c, out_sbml)
+    
     println("E2E Test completed successfully!")
 end
 

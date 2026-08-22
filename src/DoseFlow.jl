@@ -16,6 +16,6 @@ include("reports.jl")
 export Compound, Compartment, Population
 export run_simulation, load_icrp89
 export fraction_unionized, hill_effect, arrhenius_degradation, predict_Kp
-export scale_pediatric, export_to_csv, generate_pdf_report
+export scale_pediatric, export_to_csv, generate_pdf_report, export_to_sbml
 
 end # module DoseFlow
