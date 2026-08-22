@@ -1,0 +1,34 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  e2e:
+    name: E2E - Julia 1.10 - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+          arch: 'x64'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Run Engine & Output Results
+        run: julia --project=. examples/run_e2e.jl
+      - name: Upload Output Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: doseflow-results-${{ matrix.os }}
+          path: e2e_results.csv
