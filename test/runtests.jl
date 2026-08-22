@@ -1,7 +1,11 @@
 using DoseFlow
 using Test
+using Aqua
 
 @testset "DoseFlow.jl" begin
+    @testset "Code quality (Aqua.jl)" begin
+        Aqua.test_all(DoseFlow, ambiguities=false)
+    end
     @testset "Compounds" begin
         c = Compound(name="Aspirin", mw=180.16, logP=1.19, pKa=3.5, fu=0.5, CL_int=10.0)
         @test c.name == "Aspirin"
