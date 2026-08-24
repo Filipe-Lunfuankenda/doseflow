@@ -1,0 +1,65 @@
+{
+  "reference_population": "ICRP-89 Adult Male",
+  "body_weight_kg": 73.0,
+  "cardiac_output_L_h": 390.0,
+  "blood_volume_L": 5.3,
+  "hematocrit": 0.45,
+  "compartments": {
+    "liver": {
+      "volume_L": 1.8,
+      "blood_flow_L_h": 87.0,
+      "is_eliminating": true,
+      "pH": 7.2
+    },
+    "kidney": {
+      "volume_L": 0.31,
+      "blood_flow_L_h": 72.0,
+      "is_eliminating": true,
+      "gfr_L_h": 7.2,
+      "pH": 7.2
+    },
+    "brain": {
+      "volume_L": 1.4,
+      "blood_flow_L_h": 42.0,
+      "is_eliminating": false,
+      "pH": 7.1
+    },
+    "muscle": {
+      "volume_L": 29.0,
+      "blood_flow_L_h": 60.0,
+      "is_eliminating": false,
+      "pH": 7.0
+    },
+    "adipose": {
+      "volume_L": 14.0,
+      "blood_flow_L_h": 20.0,
+      "is_eliminating": false,
+      "pH": 7.4
+    },
+    "heart": {
+      "volume_L": 0.33,
+      "blood_flow_L_h": 15.0,
+      "is_eliminating": false,
+      "pH": 7.2
+    },
+    "lungs": {
+      "volume_L": 1.2,
+      "blood_flow_L_h": 390.0,
+      "is_eliminating": false,
+      "pH": 7.4
+    },
+    "skin": {
+      "volume_L": 3.3,
+      "blood_flow_L_h": 18.0,
+      "is_eliminating": false,
+      "pH": 7.4
+    },
+    "gut": {
+      "volume_L": 1.7,
+      "blood_flow_L_h": 65.0,
+      "is_eliminating": false,
+      "drains_to": "liver",
+      "pH": 7.3
+    }
+  }
+}

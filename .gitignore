@@ -21,7 +21,6 @@ docs/build/
 *.ipynb
 
 # Data and outputs
-data/
 *.pdf
 *.html
 
