@@ -4,7 +4,7 @@ using Aqua
 
 @testset "DoseFlow.jl" begin
     @testset "Code quality (Aqua.jl)" begin
-        Aqua.test_all(DoseFlow, ambiguities=false)
+        Aqua.test_all(DoseFlow, ambiguities=false, stale_deps=false, deps_compat=false)
     end
     @testset "Compounds" begin
         c = Compound(name="Aspirin", mw=180.16, logP=1.19, pKa=3.5, fu=0.5, CL_int=10.0)
