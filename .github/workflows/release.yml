@@ -11,6 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Setup Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        
+      - name: Install TinyTeX for PDF rendering
+        run: quarto install tool tinytex
+        
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
         with:
@@ -22,12 +28,19 @@ jobs:
       - name: Run E2E Simulation
         run: julia --project=. examples/run_e2e.jl
         
+      - name: Render Quarto Reports
+        run: |
+          quarto render report_Aspirin_E2E_Oral.qmd --to pdf
+          quarto render report_Aspirin_E2E_Oral.qmd --to html
+        
       - name: Prepare Release Assets
         run: |
           mkdir -p release_assets
           cp e2e_results.csv release_assets/
           cp e2e_model.xml release_assets/
           cp data/icrp89_adult_male.json release_assets/
+          cp report_Aspirin_E2E_Oral.pdf release_assets/
+          cp report_Aspirin_E2E_Oral.html release_assets/
           cd release_assets
           zip -r ../DoseFlow_Examples.zip *
           
