@@ -23,6 +23,9 @@ function main()
     println("Exporting structural SBML to ", out_sbml, "...")
     export_to_sbml(sol, pop, c, out_sbml)
     
+    println("Generating Quarto report template...")
+    generate_pdf_report(pop, c, sol, dose_mg, :Oral, ".")
+    
     println("E2E Test completed successfully!")
 end
 
